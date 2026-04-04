@@ -10,10 +10,10 @@ public sealed class CommandService : ICommandService
         _movement = movement;
     }
 
-    public void IssueMoveCommand(IReadOnlyList<IUnit> units, Vector3 destination)
+    public void IssueMoveCommand(IReadOnlyList<IUnit> units, Vector3 destination, Vector3 forward)
     {
         if (units.Count == 0) return;
 
-        _movement.SetDestination(units, destination);
+        _movement.SetDestination(units, destination, forward);
     }
 }

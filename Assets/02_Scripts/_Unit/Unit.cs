@@ -1,5 +1,6 @@
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using UnityEngine.AI;
 
 public sealed class Unit : MonoBehaviour, IUnit, ISelectable
 {
@@ -15,11 +16,6 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
     public float RemainingDistance => (_target - transform.position).magnitude;
 
     // ===== 설정값 =====
-
-    [SerializeField] private float _speed = 5f;          // 이동 속도
-    [SerializeField] private float _rotationSpeed = 10f; // 회전 속도
-    [SerializeField] private float _stopDistance = 0.05f;// 도착 판정 거리
-
     [SerializeField] private GameObject _highlight;      // 선택 표시 오브젝트
 
     // ===== 내부 상태 =====
@@ -27,6 +23,9 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
     private Vector3 _target;     // 이동 목표 위치
     private bool _isMoving;      // 이동 중 여부
 
+   
+    private NavMeshAgent _agent;  // NavMesh 이동 컴포넌트
+    private ISeparationService _separation;
     private IUnitRegistry _registry; // 유닛 등록 시스템 참조
 
     // ===== 초기화 =====
@@ -38,6 +37,9 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
 
         // 유닛 등록
         _registry.Register(this);
+
+        // NavMeshAgent 캐싱
+        _agent = GetComponent<NavMeshAgent>(); 
 
         // 시작 시 선택 표시 꺼둠
         if (_highlight != null)
@@ -52,44 +54,33 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
 
     // ===== 이동 로직 =====
 
+    private void Update()
+    {
+        if (!_agent.hasPath) return;
+
+        Vector3 force = _separation.CalculateSeparation(this, _registry.Units);
+
+        if (force.sqrMagnitude > 0.0001f)
+        {
+            _agent.Move(force * Time.deltaTime); // NavMesh 위에서 보정 이동
+        }
+    }
+
+    public void InjectSeparation(ISeparationService separation, IUnitRegistry registry)
+    {
+        _separation = separation;
+        _registry = registry;
+    }
+
     // 외부에서 이동 명령 호출
     public void MoveTo(Vector3 position)
     {
-        _target = position; // 목표 위치 설정
-        _isMoving = true;   // 이동 시작
+        SetDestination(position); // 내부 통일
     }
 
-    private void Update()
+    public void SetDestination(Vector3 position)
     {
-        if (!_isMoving) return; // 이동 중 아닐 경우 종료
-
-        Vector3 current = transform.position; // 현재 위치
-        Vector3 dir = _target - current;      // 목표 방향
-
-        float dist = dir.magnitude;           // 남은 거리
-
-        // 도착 판정
-        if (dist <= _stopDistance)
-        {
-            transform.position = _target; // 정확히 위치 보정
-            _isMoving = false;            // 이동 종료
-            return;
-        }
-
-        // 이동 처리
-        Vector3 move = dir.normalized * _speed * Time.deltaTime;
-        transform.position = current + move;
-
-        // 회전 처리 (이동 방향 바라보기)
-        if (dir.sqrMagnitude > 0.0001f)
-        {
-            Quaternion targetRot = Quaternion.LookRotation(dir);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRot,
-                _rotationSpeed * Time.deltaTime
-            );
-        }
+        _agent.SetDestination(position); // NavMesh 이동
     }
 
     // ===== 선택 처리 =====

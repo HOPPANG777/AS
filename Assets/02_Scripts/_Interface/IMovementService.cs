@@ -6,7 +6,7 @@ public interface IMovementService
 {
     void Register(IUnit unit);
     void Unregister(IUnit unit);
-    void SetDestination(IReadOnlyList<IUnit> units, Vector3 dest);
+    void SetDestination(IReadOnlyList<IUnit> units, Vector3 dest, Vector3 forward);
     void Tick();
     bool IsAllArrived();
     void Clear();

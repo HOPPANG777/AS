@@ -44,6 +44,25 @@ public sealed class SelectionService : ISelectionService
         }
     }
 
+    public void SelectSingle(IUnit unit)
+    {
+        for (int i = 0; i < _selected.Count; i++)
+        {
+            if (_selected[i] is ISelectable selectable)
+                selectable.OnDeselect();
+        }
+
+        _selected.Clear();
+
+        if (unit != null)
+        {
+            _selected.Add(unit);
+
+            if (unit is ISelectable selectable)
+                selectable.OnSelect();
+        }
+    }
+
     public void Clear()
     {
         _selected.Clear();

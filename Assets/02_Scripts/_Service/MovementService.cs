@@ -29,20 +29,19 @@ public sealed class MovementService : IMovementService
         _targets.Remove(unit);
     }
 
-    public void SetDestination(IReadOnlyList<IUnit> units, Vector3 dest)
+    public void SetDestination(IReadOnlyList<IUnit> units, Vector3 dest, Vector3 forward)
     {
-        _targets.Clear(); // 기존 이동 제거
+        _targets.Clear(); // 기존 목표 제거
 
-        _formation.CalculatePositions(units, dest, _positions); // 포메이션 계산
+        _formation.CalculatePositions(units, dest, forward, _positions); // 포메이션 계산
 
         for (int i = 0; i < units.Count; i++)
         {
-            _targets[units[i]] = _positions[i]; // 각 유닛별 목표 위치 저장
-            units[i].MoveTo(_positions[i]);     // 이동 명령 실행
+            _targets[units[i]] = _positions[i]; // 각 유닛 목표
+            units[i].MoveTo(_positions[i]);
         }
 
-        Vector3 center = GetCenter(units); // 중앙 계산
-        _visualizer.Show(center, dest);    // 시각화 시작
+        _visualizer.Show(GetCenter(units), dest);
     }
 
     public void Tick()

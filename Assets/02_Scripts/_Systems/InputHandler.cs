@@ -13,6 +13,8 @@ public sealed class InputHandler : MonoBehaviour
 
     private IDragBoxRenderer _dragBox;
 
+    private Vector3 _lastMouseWorld; // 마지막 마우스 월드 위치
+
     public void Construct(
         ISelectionService selection,
         ICommandService command,
@@ -37,6 +39,19 @@ public sealed class InputHandler : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
+            Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+            {
+                IUnit unit = hit.collider.GetComponent<IUnit>();
+
+                if (unit != null)
+                {
+                    _selection.SelectSingle(unit); // 단일 선택
+                    return;
+                }
+            }
+
             _dragStart = Input.mousePosition;
             _isDragging = true;
             _dragBox.Begin(_dragStart);
@@ -61,8 +76,15 @@ public sealed class InputHandler : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
         {
-            Vector3 worldPos = GetMouseWorldPosition();
-            _command.IssueMoveCommand(_selection.SelectedUnits, worldPos);
+            Vector3 worldPos = GetMouseWorldPosition(); // 클릭 위치
+            Vector3 dir = (worldPos - _lastMouseWorld); // 마우스 이동 방향
+
+            if (dir.sqrMagnitude < 0.001f)
+                dir = Vector3.forward; // 최소 방향 보정
+
+            _command.IssueMoveCommand(_selection.SelectedUnits, worldPos, dir);
+
+            _lastMouseWorld = worldPos; // 갱신
         }
     }
 

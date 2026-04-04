@@ -3,29 +3,30 @@ using UnityEngine;
 
 public sealed class GridFormationService : IFormationService
 {
-    // 유닛 간 최소 간격
-    private const float Spacing = 1.5f;
+    private const float Spacing = 1.5f; // 유닛 간 간격
 
-    public void CalculatePositions(IReadOnlyList<IUnit> units, Vector3 destination, List<Vector3> outPositions)
+    public void CalculatePositions(IReadOnlyList<IUnit> units, Vector3 destination, Vector3 forward, List<Vector3> outPositions)
     {
-        outPositions.Clear(); // 이전 결과 제거
+        outPositions.Clear(); // 결과 초기화
 
         int count = units.Count; // 유닛 수
-        int width = Mathf.CeilToInt(Mathf.Sqrt(count)); // 한 줄에 배치할 수
+        int width = Mathf.CeilToInt(Mathf.Sqrt(count)); // 가로 개수
+
+        // forward를 기준으로 회전 생성
+        Quaternion rot = Quaternion.LookRotation(forward.normalized);
 
         for (int i = 0; i < count; i++)
         {
-            int x = i % width;   // 가로 인덱스
-            int z = i / width;   // 세로 인덱스
+            int x = i % width; // 가로 index
+            int z = i / width; // 세로 index
 
-            // 중앙 정렬을 위한 오프셋 계산
-            float offsetX = (x - width / 2f) * Spacing;
+            float offsetX = (x - width / 2f) * Spacing; // 중심 기준 오프셋
             float offsetZ = (z - width / 2f) * Spacing;
 
-            // 최종 위치 계산
-            Vector3 pos = destination + new Vector3(offsetX, 0f, offsetZ);
+            Vector3 local = new Vector3(offsetX, 0f, offsetZ); // 로컬 포지션
+            Vector3 rotated = rot * local; // 회전 적용
 
-            outPositions.Add(pos);
+            outPositions.Add(destination + rotated); // 월드 좌표
         }
     }
 }
