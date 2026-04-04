@@ -14,7 +14,7 @@ public sealed class DragBoxRenderer : MonoBehaviour, IDragBoxRenderer
         UpdateDrag(start);
     }
 
-    public void UpdateDrag(Vector2 current);
+    public void UpdateDrag(Vector2 current)
     {
         Vector2 min = Vector2.Min(_start, current);
         Vector2 max = Vector2.Max(_start, current);
