@@ -61,12 +61,26 @@ public sealed class MovementService : IMovementService
         _visualizer.UpdateProgress(center);
     }
 
+    // MovementService.cs 내부
+
     public bool IsAllArrived()
     {
+        if (_targets.Count == 0) return false;
+
         foreach (var pair in _targets)
         {
-            float dist = Vector3.Distance(pair.Key.Transform.position, pair.Value);
-            if (dist > 0.05f)
+            Vector3 unitPos = pair.Key.Transform.position;
+            Vector3 targetPos = pair.Value;
+
+            // [핵심] 높이(Y축) 때문에 거리가 멀게 계산되는 것을 막기 위해 둘 다 0으로 맞춥니다.
+            unitPos.y = 0;
+            targetPos.y = 0;
+
+            // X, Z 축 평면 거리만 계산
+            float dist = Vector3.Distance(unitPos, targetPos);
+
+            // 넉넉하게 1.5f 이내로 들어오면 도착한 것으로 인정
+            if (dist > 1.5f)
                 return false;
         }
         return true;
@@ -75,7 +89,10 @@ public sealed class MovementService : IMovementService
     public void Clear()
     {
         _targets.Clear();
-        _visualizer.Hide();
+        if (_visualizer != null)
+        {
+            _visualizer.Hide();
+        }
     }
 
     private Vector3 GetCenter(IReadOnlyList<IUnit> units)

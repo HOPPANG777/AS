@@ -12,8 +12,12 @@ public sealed class GameBootstrap : MonoBehaviour
     [SerializeField] private PathVisualizer _visualizer;
     [SerializeField] private DragBoxRenderer _dragBox;
 
+    //[Header("Units")]
+    //[SerializeField] private IUnit[] _units;
+
     [Header("Units")]
-    [SerializeField] private IUnit[] _units;
+    // 잘모르는데 오류가 나서 수정해봤습다. [주현씨 수정]
+    [SerializeField] private Unit[] _units;
 
     private void Awake()
     {
@@ -27,7 +31,9 @@ public sealed class GameBootstrap : MonoBehaviour
         var separation = new SeparationService();
 
         _input.Construct(selection, command, _dragBox, _camera, _groundLayer);
-        _updater.Construct(movement);
+
+        _updater.Construct(movement, selection);
+
 
         for (int i = 0; i < _units.Length; i++)
         {

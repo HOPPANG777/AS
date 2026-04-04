@@ -65,6 +65,13 @@ public sealed class SelectionService : ISelectionService
 
     public void Clear()
     {
-        _selected.Clear();
+        // 현재 선택된 모든 유닛의 선택 해제 함수 호출
+        for (int i = 0; i < _selected.Count; i++)
+        {
+            if (_selected[i] is ISelectable selectable)
+                selectable.OnDeselect(); // 여기서 강조 원과 UI가 꺼집니다.
+        }
+
+        _selected.Clear(); // 리스트 비우기
     }
 }

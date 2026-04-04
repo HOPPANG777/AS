@@ -8,6 +8,10 @@ public sealed class InputHandler : MonoBehaviour
     private Vector2 _dragStart;
     private bool _isDragging;
 
+    // 드래그 이동 미리보기용 변수
+    private bool _isMoveTargeting;
+    private IPathVisualizer _visualizer;
+
     private Camera _camera;
     private LayerMask _groundLayer;
 
@@ -28,6 +32,9 @@ public sealed class InputHandler : MonoBehaviour
         _dragBox = dragBox;
         _camera = camera;
         _groundLayer = groundLayer;
+
+        // 씬에서 PathVisualizer(미리보기 선과 원)를 찾아옵니다.
+        _visualizer = Object.FindAnyObjectByType<PathVisualizer>();
     }
 
     private void Update()
@@ -37,7 +44,10 @@ public sealed class InputHandler : MonoBehaviour
 
     private void HandleMouseInput()
     {
-        if (Input.GetMouseButtonDown(0))
+        // ==========================================
+        // 1. 유닛 선택 및 드래그 (우클릭: 1)
+        // ==========================================
+        if (Input.GetMouseButtonDown(1))
         {
             Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
 
@@ -52,17 +62,18 @@ public sealed class InputHandler : MonoBehaviour
                 }
             }
 
+            // 빈 땅 우클릭 시 선택 드래그 상자 시작
             _dragStart = Input.mousePosition;
             _isDragging = true;
             _dragBox.Begin(_dragStart);
         }
 
-        if (Input.GetMouseButton(0) && _isDragging)
+        if (Input.GetMouseButton(1) && _isDragging)
         {
             _dragBox.UpdateDrag(Input.mousePosition);
         }
 
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(1))
         {
             if (_isDragging)
             {
@@ -74,18 +85,69 @@ public sealed class InputHandler : MonoBehaviour
             _isDragging = false;
         }
 
-        if (Input.GetMouseButtonDown(1))
+        // ==========================================
+        // 2. 이동 버튼 누른 후 '드래그 이동' (좌클릭: 0)
+        // ==========================================
+
+        // UI의 이동 버튼이 눌려서 '이동 대기 상태'일 때만 작동합니다.
+        if (UIManager.Instance != null && UIManager.Instance.isMoveTargetingMode)
         {
-            Vector3 worldPos = GetMouseWorldPosition(); // 클릭 위치
-            Vector3 dir = (worldPos - _lastMouseWorld); // 마우스 이동 방향
+            // [드래그 시작] 좌클릭을 누르는 순간
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (_selection.SelectedUnits.Count > 0)
+                {
+                    _isMoveTargeting = true;
+                    _lastMouseWorld = GetMouseWorldPosition(); // 시작점 기억
+                }
+            }
 
-            if (dir.sqrMagnitude < 0.001f)
-                dir = Vector3.forward; // 최소 방향 보정
+            // [드래그 중] 좌클릭을 누른 채로 마우스를 움직일 때 (경로 미리보기)
+            if (Input.GetMouseButton(0) && _isMoveTargeting)
+            {
+                Vector3 currentMouseWorld = GetMouseWorldPosition();
+                Vector3 center = GetSelectedUnitsCenter();
 
-            _command.IssueMoveCommand(_selection.SelectedUnits, worldPos, dir);
+                // 팀원의 PathVisualizer를 이용해 선과 원을 마우스 위치에 미리 그려줍니다.
+                if (_visualizer != null)
+                {
+                    _visualizer.Show(center, currentMouseWorld);
+                }
+            }
 
-            _lastMouseWorld = worldPos; // 갱신
+            // [드래그 끝] 좌클릭을 떼는 순간 (실제 이동 명령)
+            if (Input.GetMouseButtonUp(0))
+            {
+                if (_isMoveTargeting)
+                {
+                    Vector3 worldPos = GetMouseWorldPosition(); // 최종 마우스 위치 (도착지)
+                    Vector3 dir = (worldPos - _lastMouseWorld); // 드래그한 방향 (포메이션 방향)
+
+                    if (dir.sqrMagnitude < 0.001f)
+                        dir = Vector3.forward;
+
+                    // 팀원의 시스템으로 진짜 이동 명령 하달!
+                    _command.IssueMoveCommand(_selection.SelectedUnits, worldPos, dir);
+
+                    // 드래그 및 이동 대기 상태 종료
+                    _isMoveTargeting = false;
+                    UIManager.Instance.isMoveTargetingMode = false;
+                }
+            }
         }
+    }
+
+    // 선택된 유닛들의 뭉쳐있는 중심 위치를 계산하는 도우미 함수
+    private Vector3 GetSelectedUnitsCenter()
+    {
+        if (_selection.SelectedUnits.Count == 0) return Vector3.zero;
+
+        Vector3 center = Vector3.zero;
+        for (int i = 0; i < _selection.SelectedUnits.Count; i++)
+        {
+            center += _selection.SelectedUnits[i].Transform.position;
+        }
+        return center / _selection.SelectedUnits.Count;
     }
 
     private Rect GetScreenRect(Vector2 start, Vector2 end)
