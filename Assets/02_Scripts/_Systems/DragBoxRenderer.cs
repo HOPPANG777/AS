@@ -20,7 +20,7 @@ public sealed class DragBoxRenderer : MonoBehaviour, IDragBoxRenderer
         Vector2 max = Vector2.Max(_start, current);
 
         _box.anchoredPosition = min;
-        _box.sizeDelta = max - min;
+        _box.sizeDelta = (max - min);
     }
 
     public void End()
