@@ -47,7 +47,6 @@ public class UIManager : MonoBehaviour
     public void OnClickMoveButton()
     {
         isMoveTargetingMode = true; // 드래그 이동 대기 상태로 전환!
-        Debug.Log("이동 버튼 클릭됨! 이제 마우스를 드래그해서 경로를 그리세요.");
     }
 
 }
