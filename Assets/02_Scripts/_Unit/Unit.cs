@@ -27,17 +27,34 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
     // ===== 설정값 =====
     [SerializeField] private GameObject _highlight;      // 선택 표시 오브젝트
 
+    // 사운드 재생을 위한 변수들
+    [Header("Audio")]
+    [SerializeField] private AudioClip _selectSound;     // 인스펙터에서 연결할 효과음 파일
+    private AudioSource _audioSource;                    // 유닛의 스피커 역할
+
     // ===== 내부 상태 =====
 
     private Vector3 _target;     // 이동 목표 위치
     private bool _isMoving;      // 이동 중 여부
 
-   
+
     private NavMeshAgent _agent;  // NavMesh 이동 컴포넌트
     private ISeparationService _separation;
     private IUnitRegistry _registry; // 유닛 등록 시스템 참조
 
     // ===== 초기화 =====
+
+    private void Awake()
+    {
+        // 추가됨 게임이 시작될 때 스피커(AudioSource)를 찾아서 연결합니다.
+        _audioSource = GetComponent<AudioSource>();
+
+        // 만약 유닛에 스피커가 없다면 코드가 알아서 달아줍니다.
+        if (_audioSource == null)
+        {
+            _audioSource = gameObject.AddComponent<AudioSource>();
+        }
+    }
 
     // 외부에서 Registry 주입
     public void Construct(IUnitRegistry registry)
@@ -48,7 +65,7 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
         _registry.Register(this);
 
         // NavMeshAgent 캐싱
-        _agent = GetComponent<NavMeshAgent>(); 
+        _agent = GetComponent<NavMeshAgent>();
 
         // 시작 시 선택 표시 꺼둠
         if (_highlight != null)
@@ -65,7 +82,7 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
 
     private void Update()
     {
-        // [추가된 방어 코드] 핵심 변수들이 텅 비어있다면 에러 내지 말고 그냥 넘어가라!
+        // 추가된 방어 코드
         if (_agent == null || _separation == null || _registry == null) return;
 
         if (!_agent.hasPath) return;
@@ -106,6 +123,12 @@ public sealed class Unit : MonoBehaviour, IUnit, ISelectable
         if (UIManager.Instance != null)
         {
             UIManager.Instance.ShowUnitInfo(hp, maxHp, troops, atk, def, spd);
+        }
+
+        // [추가됨] 효과음 재생! (소리 파일이 연결되어 있을 때만 실행)
+        if (_audioSource != null && _selectSound != null)
+        {
+            _audioSource.PlayOneShot(_selectSound); // 소리가 겹쳐도 자연스럽게 재생됨
         }
     }
 
