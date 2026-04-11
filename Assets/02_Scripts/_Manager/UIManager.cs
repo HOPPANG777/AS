@@ -15,13 +15,24 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI defenseText;
     public TextMeshProUGUI speedText;
 
-    // 현재 '이동 버튼'을 누른 상태인지 확인하는 변수
     public bool isMoveTargetingMode = false;
+
+    // 사운드 재생을 위한 변수들
+    [Header("Audio")]
+    public AudioClip buttonClickSound; // 인스펙터에서 연결할 버튼 클릭 소리
+    private AudioSource audioSource;   // UI의 스피커 역할
 
     private void Awake()
     {
         Instance = this;
         unitInfoPanel.SetActive(false); // 시작할 땐 숨김
+
+        // 스피커(AudioSource) 컴포넌트를 찾거나 없으면 추가합니다.
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     public void ShowUnitInfo(int hp, int maxHp, int troops, int atk, int def, int spd)
@@ -33,7 +44,6 @@ public class UIManager : MonoBehaviour
         defenseText.text = $"방어력 {def}";
         speedText.text = $"이동력 {spd}";
 
-        // 다른 유닛을 새로 클릭하면 이동 모드는 우선 취소됨
         isMoveTargetingMode = false;
     }
 
@@ -43,11 +53,26 @@ public class UIManager : MonoBehaviour
         isMoveTargetingMode = false;
     }
 
-    // 유니티 에디터에서 '이동' 버튼을 누르면 실행될 함수
     public void OnClickMoveButton()
     {
-        isMoveTargetingMode = true; // 드래그 이동 대기 상태로 전환!
+        PlayClickSound(); //  효과음 재생!
+        isMoveTargetingMode = true;
         Debug.Log("이동 버튼 클릭됨! 이제 마우스를 드래그해서 경로를 그리세요.");
     }
 
+    public void OnClickAttackButton()
+    {
+        PlayClickSound(); //  효과음 재생!
+        Debug.Log("공격 버튼 클릭됨! (현재 기능 없음)");
+    }
+
+    // 소리를 재생하는 공통 도우미 함수
+    private void PlayClickSound()
+    {
+        if (audioSource != null && buttonClickSound != null)
+        {
+            // 소리가 겹쳐도 자연스럽게 재생되도록 PlayOneShot 사용
+            audioSource.PlayOneShot(buttonClickSound);
+        }
+    }
 }
